@@ -4,7 +4,7 @@ import serial
 import serial.tools.list_ports
 import threading
 import time
-
+import requests
 
 # Function to read from the serial port
 def read_serial():
@@ -38,6 +38,10 @@ def moist_percent(value):
     percent = round(percent)
     return percent
 
+
+
+
+#dumbass code that doesn't work idk why
 # def soil_status(value):
 #     if value < 40 or value > 20 :
 #         update_status("GOOD")
