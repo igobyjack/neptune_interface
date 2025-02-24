@@ -1,3 +1,5 @@
+# For testing purposes, designed to gain a read on how the moisuture data evolves. 
+
 import os
 import tkinter as tk
 from tkinter import ttk
