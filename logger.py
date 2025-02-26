@@ -3,8 +3,7 @@
 import os
 import tkinter as tk
 from tkinter import ttk
-import serial
-import serial.tools.list_ports
+import RPi.GPIO as GPIO
 import threading
 import time
 import csv
@@ -25,63 +24,37 @@ def get_moisttext(percent):
     else:
         return "Very Wet"
 
-def list_serial_ports():
-    ports = serial.tools.list_ports.comports()
-    return [port.device for port in ports]
-
 def update_status(message):
     status_label.config(text=message)
     print(message)
 
-def log_moisture(serial_port, baud_rate=9600):
-    try:
-        ser = serial.Serial(serial_port, baud_rate, timeout=1)
-        ser.reset_input_buffer()  # Clear any buffered data
-    except Exception as e:
-        update_status(f"Serial error: {e}")
-        return
-
-    # Use moisturelog.csv in the neptune_interface folder.
+def log_moisture():
     log_file = os.path.join(os.path.dirname(__file__), "moisturelog.csv")
     update_status(f"Logging moisture data to {log_file}.")
 
     while logging_running:
-        # Read until a valid data line is received
-        line = ""
-        while logging_running and not line:
-            line = ser.readline().decode('utf-8').strip()
-
-        if not logging_running:
-            break
-
-        try:
-            sensor_value = int(line)
-            percent = moist_percent(sensor_value)
-            level = get_moisttext(percent)
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            with open(log_file, "a", newline="") as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow([timestamp, percent, level])
-            update_status(f"{timestamp} - {percent}%, {sensor_value}, ({level})")
-        except ValueError:
-            update_status("Unable to parse sensor value.")
+        moisture_value = GPIO.input(17)
+        percent = moist_percent(moisture_value)
+        level = get_moisttext(percent)
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(log_file, "a", newline="") as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow([timestamp, percent, level])
+        update_status(f"{timestamp} - {percent}%, {moisture_value}, ({level})")
 
         # 5 minutes between logging (300 seconds)
         for _ in range(300):
             if not logging_running:
                 break
             time.sleep(1)
-    ser.close()
     update_status("Session terminated.")
 
 def start_logging():
     global logging_running, logging_thread
-    com_port = com_var.get()
-    if not com_port:
-        update_status("Please select a COM port.")
-        return
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(17, GPIO.IN)
     logging_running = True
-    logging_thread = threading.Thread(target=log_moisture, args=(com_port,), daemon=True)
+    logging_thread = threading.Thread(target=log_moisture, daemon=True)
     logging_thread.start()
     start_button.config(state=tk.DISABLED)
     stop_button.config(state=tk.NORMAL)
@@ -89,21 +62,13 @@ def start_logging():
 def stop_logging():
     global logging_running
     logging_running = False
+    GPIO.cleanup()
     start_button.config(state=tk.NORMAL)
     stop_button.config(state=tk.DISABLED)
 
 # Build Tkinter UI
 root = tk.Tk()
 root.title("Moisture Logger")
-
-# COM Port selection
-com_var = tk.StringVar()
-ports = list_serial_ports()
-com_var.set(ports[0] if ports else "")
-com_label = ttk.Label(root, text="Select COM Port:")
-com_label.pack(pady=5)
-com_menu = ttk.OptionMenu(root, com_var, com_var.get(), *ports)
-com_menu.pack(pady=5)
 
 # Start and Stop buttons
 start_button = ttk.Button(root, text="Start Logging", command=start_logging)

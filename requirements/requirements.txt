@@ -3,3 +3,4 @@ pyserial
 threading
 json
 requests
+RPi.GPIO
