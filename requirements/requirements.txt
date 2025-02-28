@@ -1,4 +1,3 @@
-tkinter
 pyserial
 threading
 json
