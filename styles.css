@@ -1,0 +1,32 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+
+h1, h2 {
+    font-family: 'SF Pro', sans-serif;
+    margin-bottom: 10px;
+}
+
+section {
+    margin-bottom: 20px;
+}
+
+#sensor-data p, #weather-prediction p, #com-port-selection p {
+    font-size: 16px;
+    margin: 5px 0;
+}
+
+#sensor-data span, #weather-prediction span, #com-port-selection span {
+    font-weight: bold;
+}
+
+#city-name, #com-port, #toggle-sensor, #get-weather {
+    padding: 10px;
+    margin: 5px 0;
+}
+
+#weather-result {
+    margin-top: 10px;
+    font-size: 14px;
+}
