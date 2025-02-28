@@ -61,7 +61,7 @@ def log_moisture(serial_port, baud_rate=9600):
             timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             with open(log_file, "a", newline="") as csvfile:
                 writer = csv.writer(csvfile)
-                writer.writerow([timestamp, percent, level])
+                writer.writerow([timestamp, percent, sensor_value, level])
             update_status(f"{timestamp} - {percent}%, {sensor_value}, ({level})")
         except ValueError:
             update_status("Unable to parse sensor value.")

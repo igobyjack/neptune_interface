@@ -1,3 +1,4 @@
+import numpy
 import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import ttk
@@ -38,10 +39,7 @@ def update_moisttext(word):
 
 #TODO: develop watering recommendation algorithm
 def get_recommendation(percent, rainfall):
-    
-    
-    
-    
+    # succs
     return
 
 #finding soil description text; what it should be
@@ -85,6 +83,12 @@ def stop_reading():
     if ser.is_open:
         ser.close()
         lbl_status.config(text="Disconnected")
+
+# adding raspberry pi ports
+def update_com_ports():
+    if not com_ports:
+        com_ports.append("/dev/ttyS0")
+        com_ports.append("/dev/ttyUSB0")
 
 # Function to get the rain prediction from the weather API
 def get_rain_prediction():
@@ -158,6 +162,8 @@ lbl_moisttext.pack(pady=10)
 
 com_var = tk.StringVar()
 com_ports = list_serial_ports()
+#Raspberry pi port update
+update_com_ports()
 com_var.set(com_ports[0] if com_ports else "No COM ports found")
 com_menu = ttk.OptionMenu(root, com_var, *com_ports)
 com_menu.pack(pady=10)
