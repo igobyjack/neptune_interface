@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neptune Systems Interface</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Neptune Systems Interface</h1>
+
+    <!-- Sensor Section -->
+    <div class="section sensor-section">
+        <h2>Moisture Sensor</h2>
+        <div class="sensor-data">
+            <div class="data-row">
+                <span class="label">Raw Value:</span>
+                <span id="sensor-value">Waiting for data...</span>
+            </div>
+            <div class="data-row">
+                <span class="label">Moisture Level:</span>
+                <span id="sensor-percent">Waiting for data...</span>
+            </div>
+            <div class="data-row">
+                <span class="label">Condition:</span>
+                <span id="sensor-moisture-text">Waiting for data...</span>
+            </div>
+            <div class="data-row">
+                <span class="label">Moisture Bar:</span>
+                <div class="moisture-bar-container">
+                    <div id="moisture-bar" class="moisture-bar"></div>
+                    <span id="moisture-bar-text" class="moisture-bar-text">0%</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <select id="com-port">
+                <option value="">Select COM Port</option>
+            </select>
+            <button id="toggle-sensor">Start</button>
+        </div>
+    </div>
+    
+    <!-- Recommendation Section -->
+    <div class="section recommendation-section">
+        <h2>Watering Recommendation</h2>
+        <div id="watering-recommendation" class="recommendation-text">
+            Connect to sensor and enter a city to get watering recommendations.
+        </div>
+    </div>
+    
+
+    <!-- Weather Section -->
+    <div class="section weather-section">
+        <h2>Weather Forecast</h2>
+        <div class="weather-controls">
+            <input type="text" id="city-name" placeholder="Enter city name">
+            <button id="get-weather">Get Forecast</button>
+        </div>
+        <div id="weather-result" class="weather-result">
+            Enter a city name to see the forecast.
+        </div>
+    </div>
+
+
+    <script src="script.js"></script>
+</body>
+</html>

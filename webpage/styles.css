@@ -1,0 +1,245 @@
+/* Global Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+h1, h2 {
+    font-family: 'SF Pro', sans-serif;
+    margin-bottom: 10px;
+}
+
+h2 {
+    color: #444;
+    margin-bottom: 15px;
+}
+
+section {
+    margin-bottom: 20px;
+}
+
+/* Section Styles */
+.section {
+    background-color: #f8f8f8;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+#sensor-data p, #weather-prediction p, #com-port-selection p {
+    font-size: 16px;
+    margin: 5px 0;
+}
+
+/* Sensor Data Styles */
+.sensor-data {
+    margin-bottom: 15px;
+}
+
+.data-row {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.label {
+    font-weight: bold;
+    min-width: 120px;
+}
+
+#sensor-data span, #weather-prediction span, #com-port-selection span {
+    font-weight: bold;
+}
+
+/* Controls Styles */
+.controls, .weather-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+select, input, button {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    border: none;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#city-name, #com-port, #toggle-sensor, #get-weather {
+    padding: 10px;
+    margin: 5px 0;
+}
+
+/* Weather Forecast Styles */
+.weather-result {
+    padding: 10px;
+    min-height: 50px;
+}
+
+#weather-result {
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+/* Forecast Card Styles */
+.forecast-header {
+    margin-bottom: 15px;
+    color: #333;
+}
+
+/* Fix for the forecast layout */
+.forecast-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center; /* Change from space-between to center */
+}
+
+.forecast-day {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 10px;
+    width: calc(23% - 10px); /* Slightly reduce width to ensure all fit on one row */
+    min-width: 160px; /* Minimum width that won't break layout */
+    margin: 5px; /* Add margin to help spacing */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+    flex-grow: 0; /* Prevent growing */
+}
+
+/* Adjust media queries for better responsive behavior */
+@media (max-width: 768px) {
+    .forecast-day {
+        width: calc(48% - 10px); /* Two per row on medium screens */
+    }
+}
+
+@media (max-width: 500px) {
+    .forecast-day {
+        width: 100%; /* One per row on small screens */
+        min-width: auto;
+    }
+}
+
+.forecast-date {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.forecast-icon {
+    margin: 5px 0;
+}
+
+.forecast-temp {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.forecast-desc {
+    margin: 5px 0;
+    font-style: italic;
+}
+
+.forecast-rain {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    color: #0066cc;
+}
+
+.error {
+    color: #cc0000;
+}
+
+@media (max-width: 600px) {
+    .forecast-container {
+        flex-direction: column;
+    }
+    
+    .forecast-day {
+        width: 100%;
+    }
+}
+
+/* Moisture Bar Styles */
+.moisture-bar-container {
+    width: 100%;
+    background-color: #f0f0f0;
+    height: 20px;
+    border-radius: 10px;
+    margin: 5px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.moisture-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
+    width: 0%;
+    border-radius: 8px;
+    transition: width 0.5s ease-in-out;
+}
+
+.moisture-bar-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #333;
+    font-weight: bold;
+    text-shadow: 0px 0px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Recommendation Section Styles */
+.recommendation-section {
+    background-color: #f8f9fa;
+    border-left: 4px solid #17a2b8;
+}
+
+.recommendation-text {
+    padding: 10px;
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.recommendation-alert {
+    font-weight: bold;
+    font-size: 18px;
+    color: #dc3545;
+}
+
+.recommendation-good {
+    font-weight: bold;
+    font-size: 18px;
+    color: #28a745;
+}
