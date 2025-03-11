@@ -36,11 +36,7 @@ def update_moisttext(word):
     lbl_moisttext.config(text=word)
 
 
-#TODO: develop watering recommendation algorithm
 def get_recommendation(percent, rainfall):
-    
-    
-    
     
     return
 
