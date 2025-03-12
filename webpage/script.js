@@ -14,6 +14,16 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentMoisturePercent = 0;
     let weatherForecastData = null;
 
+    // WebSocket client to receive moisture data from the Raspberry Pi
+    const websocket = new WebSocket('ws://localhost:8765');
+
+    websocket.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        const sensorValue = parseInt(data.value);
+        const percent = parseInt(data.percent);
+        updateSensorData(sensorValue, percent, getMoistText(percent));
+    };
+
     async function startReading() {
         try {
             serialPort = await navigator.serial.requestPort();
