@@ -4,7 +4,6 @@ import os
 import tkinter as tk
 from tkinter import ttk
 import serial
-import serial.tools.list_ports
 import threading
 import time
 import csv
@@ -25,15 +24,11 @@ def get_moisttext(percent):
     else:
         return "Very Wet"
 
-def list_serial_ports():
-    ports = serial.tools.list_ports.comports()
-    return [port.device for port in ports]
-
 def update_status(message):
     status_label.config(text=message)
     print(message)
 
-def log_moisture(serial_port, baud_rate=9600):
+def log_moisture(serial_port='/dev/ttyACM0', baud_rate=9600):
     try:
         ser = serial.Serial(serial_port, baud_rate, timeout=1)
         ser.reset_input_buffer()  # Clear any buffered data
@@ -76,12 +71,8 @@ def log_moisture(serial_port, baud_rate=9600):
 
 def start_logging():
     global logging_running, logging_thread
-    com_port = com_var.get()
-    if not com_port:
-        update_status("Please select a COM port.")
-        return
     logging_running = True
-    logging_thread = threading.Thread(target=log_moisture, args=(com_port,), daemon=True)
+    logging_thread = threading.Thread(target=log_moisture, daemon=True)
     logging_thread.start()
     start_button.config(state=tk.DISABLED)
     stop_button.config(state=tk.NORMAL)
@@ -94,16 +85,7 @@ def stop_logging():
 
 # Build Tkinter UI
 root = tk.Tk()
-root.title("Moisture Logger")
-
-# COM Port selection
-com_var = tk.StringVar()
-ports = list_serial_ports()
-com_var.set(ports[0] if ports else "")
-com_label = ttk.Label(root, text="Select COM Port:")
-com_label.pack(pady=5)
-com_menu = ttk.OptionMenu(root, com_var, com_var.get(), *ports)
-com_menu.pack(pady=5)
+root.title("Moisture Logger (Raspberry Pi)")
 
 # Start and Stop buttons
 start_button = ttk.Button(root, text="Start Logging", command=start_logging)
