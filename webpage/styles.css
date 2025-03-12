@@ -46,7 +46,7 @@ section {
     margin-bottom: 20px;
 }
 
-#sensor-data p, #weather-prediction p, #com-port-selection p {
+#sensor-data p, #com-port-selection p {
     font-size: 16px;
     margin: 5px 0;
 }
@@ -66,12 +66,12 @@ section {
     min-width: 120px;
 }
 
-#sensor-data span, #weather-prediction span, #com-port-selection span {
+#sensor-data span, #com-port-selection span {
     font-weight: bold;
 }
 
 /* Controls Styles */
-.controls, .weather-controls {
+.controls {
     display: flex;
     gap: 10px;
     margin-bottom: 15px;
@@ -94,101 +94,9 @@ button:hover {
     background-color: #45a049;
 }
 
-#city-name, #com-port, #toggle-sensor, #get-weather {
+#com-port, #toggle-sensor {
     padding: 10px;
     margin: 5px 0;
-}
-
-/* Weather Forecast Styles */
-.weather-result {
-    padding: 10px;
-    min-height: 50px;
-}
-
-#weather-result {
-    margin-top: 10px;
-    font-size: 14px;
-}
-
-/* Forecast Card Styles */
-.forecast-header {
-    margin-bottom: 15px;
-    color: #333;
-}
-
-/* Fix for the forecast layout */
-.forecast-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center; /* Change from space-between to center */
-}
-
-.forecast-day {
-    background: #ffffff;
-    border-radius: 8px;
-    padding: 10px;
-    width: calc(23% - 10px); /* Slightly reduce width to ensure all fit on one row */
-    min-width: 160px; /* Minimum width that won't break layout */
-    margin: 5px; /* Add margin to help spacing */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    text-align: center;
-    flex-grow: 0; /* Prevent growing */
-}
-
-/* Adjust media queries for better responsive behavior */
-@media (max-width: 768px) {
-    .forecast-day {
-        width: calc(48% - 10px); /* Two per row on medium screens */
-    }
-}
-
-@media (max-width: 500px) {
-    .forecast-day {
-        width: 100%; /* One per row on small screens */
-        min-width: auto;
-    }
-}
-
-.forecast-date {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.forecast-icon {
-    margin: 5px 0;
-}
-
-.forecast-temp {
-    font-size: 1.2em;
-    font-weight: bold;
-}
-
-.forecast-desc {
-    margin: 5px 0;
-    font-style: italic;
-}
-
-.forecast-rain {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    color: #0066cc;
-}
-
-.error {
-    color: #cc0000;
-}
-
-@media (max-width: 600px) {
-    .forecast-container {
-        flex-direction: column;
-    }
-    
-    .forecast-day {
-        width: 100%;
-    }
 }
 
 /* Moisture Bar Styles */

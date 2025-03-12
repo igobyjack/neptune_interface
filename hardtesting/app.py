@@ -4,14 +4,9 @@ from tkinter import ttk
 import serial
 import threading
 import time
-import requests
 import json
 import asyncio
 import websockets
-
-# Your API key for the weather forecast
-api_key = "8142ceef20f88fdf993574705d67004a"
-base_url = "http://api.openweathermap.org/data/2.5/forecast?"
 
 # Global flag for sensor reading
 sensor_running = False
@@ -86,57 +81,6 @@ def stop_reading():
         ser.close()
         lbl_status.config(text="Disconnected")
 
-# Function to get the rain prediction from the weather API
-def get_rain_prediction():
-    city = city_entry.get()
-    if not city:
-        weather_result.config(text="Please enter a city name.")
-        return
-
-    complete_url = base_url + "appid=" + api_key + "&q=" + city
-    try:
-        response = requests.get(complete_url)
-        x = response.json()
-        if x["cod"] != "404":
-            daily_rain_predictions = []
-            for forecast in x["list"]:
-                date_time = forecast["dt_txt"]
-                date = date_time.split(" ")[0]
-                if date not in [d["date"] for d in daily_rain_predictions]:
-                    rain_chance = forecast.get("rain", {}).get("3h", 0)
-                    daily_rain_predictions.append({
-                        "date": date,
-                        "rain_chance": rain_chance
-                    })
-                if len(daily_rain_predictions) == 4:
-                    break
-
-            result = ""
-            for prediction in daily_rain_predictions:
-                result += f"Date: {prediction['date']}\n Rain Prediction (mm/3h): {prediction['rain_chance']}\n\n"
-            weather_result.config(text=result)
-        else:
-            weather_result.config(text="City Not Found")
-    except Exception as e:
-        weather_result.config(text=f"Error: {e}")
-
-# Toggle function to start or stop sensor reading and trigger rain API on start
-def toggle_start_stop():
-    global sensor_running
-    if not sensor_running:
-        if not city_entry.get().strip():
-            weather_result.config(text="Please enter a city name.")
-            return
-        # Start sensor reading and get rain prediction
-        start_reading()
-        get_rain_prediction()
-        toggle_btn.config(text="Stop")
-        sensor_running = True
-    else:
-        stop_reading()
-        toggle_btn.config(text="Start")
-        sensor_running = False
-
 # Function to send data via WebSocket
 async def send_data_via_websocket(value, percent):
     async with websockets.connect(websocket_address) as websocket:
@@ -175,19 +119,6 @@ lbl_moisttext.pack(pady=10)
 
 lbl_status = ttk.Label(root, text="", font=("SF Pro", 10, "bold"))
 lbl_status.pack(pady=10)
-
-# Weather prediction UI components
-separator = ttk.Separator(root, orient='horizontal')
-separator.pack(fill='x', pady=15)
-
-city_label = ttk.Label(root, text="Enter City for Rain Prediction:", font=("SF Pro", 12, "bold"))
-city_label.pack(pady=5)
-
-city_entry = ttk.Entry(root, width=30)
-city_entry.pack(pady=5)
-
-weather_result = ttk.Label(root, text="", font=("SF Pro", 10, "bold"), justify=tk.LEFT)
-weather_result.pack(pady=10)
 
 # Single toggle button for starting/stopping sensor reading & getting rain prediction
 toggle_btn = ttk.Button(root, text="Start", command=toggle_start_stop)
