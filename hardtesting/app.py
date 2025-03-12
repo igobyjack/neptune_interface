@@ -6,6 +6,8 @@ import threading
 import time
 import requests
 import json
+import asyncio
+import websockets
 
 # Your API key for the weather forecast
 api_key = "8142ceef20f88fdf993574705d67004a"
@@ -13,6 +15,9 @@ base_url = "http://api.openweathermap.org/data/2.5/forecast?"
 
 # Global flag for sensor reading
 sensor_running = False
+
+# WebSocket server address
+websocket_address = "ws://localhost:8765"
 
 # Function to read from the serial port
 def read_serial():
@@ -24,6 +29,7 @@ def read_serial():
             update_percent(f"{lolpercent}%")
             update_label(line)
             update_moisttext(get_moisttext(lolpercent))
+            asyncio.run(send_data_via_websocket(line, lolpercent))
         time.sleep(0.1)
 
 # Function to update the sensor reading label
@@ -131,6 +137,28 @@ def toggle_start_stop():
         toggle_btn.config(text="Start")
         sensor_running = False
 
+# Function to send data via WebSocket
+async def send_data_via_websocket(value, percent):
+    async with websockets.connect(websocket_address) as websocket:
+        data = json.dumps({"value": value, "percent": percent})
+        await websocket.send(data)
+
+# Function to handle WebSocket connections
+async def websocket_handler(websocket, path):
+    while True:
+        try:
+            message = await websocket.recv()
+            print(f"Received message: {message}")
+        except websockets.ConnectionClosed:
+            print("Connection closed")
+            break
+
+# Start WebSocket server
+def start_websocket_server():
+    start_server = websockets.serve(websocket_handler, "localhost", 8765)
+    asyncio.get_event_loop().run_until_complete(start_server)
+    asyncio.get_event_loop().run_forever()
+
 # Create the main window
 root = tk.Tk()
 root.title("Neptune Systems Interface (Raspberry Pi)")
@@ -164,5 +192,8 @@ weather_result.pack(pady=10)
 # Single toggle button for starting/stopping sensor reading & getting rain prediction
 toggle_btn = ttk.Button(root, text="Start", command=toggle_start_stop)
 toggle_btn.pack(pady=10)
+
+# Start WebSocket server in a separate thread
+threading.Thread(target=start_websocket_server, daemon=True).start()
 
 root.mainloop()
