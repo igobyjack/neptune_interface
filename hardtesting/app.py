@@ -2,7 +2,6 @@ import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import ttk
 import serial
-import serial.tools.list_ports
 import threading
 import time
 import requests
@@ -65,12 +64,11 @@ def moist_percent(value):
 # Function to start the serial reading thread
 def start_reading():
     global ser, stop_thread
-    com_port = com_var.get()
     try:
-        ser = serial.Serial(com_port, 9600, timeout=1)
+        ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
         stop_thread = False
         threading.Thread(target=read_serial, daemon=True).start()
-        lbl_status.config(text=f"Connected to {com_port}")
+        lbl_status.config(text=f"Connected to /dev/ttyACM0")
     except serial.SerialException as e:
         lbl_status.config(text=f"Error: {e}")
 
@@ -133,14 +131,9 @@ def toggle_start_stop():
         toggle_btn.config(text="Start")
         sensor_running = False
 
-# Function to list all available COM ports
-def list_serial_ports():
-    ports = serial.tools.list_ports.comports()
-    return [port.device for port in ports]
-
 # Create the main window
 root = tk.Tk()
-root.title("Neptune Systems Interface")
+root.title("Neptune Systems Interface (Raspberry Pi)")
 
 # # Sensor reading UI components
 lbl_value = ttk.Label(root, text="Waiting for sensor data...", font=("SF Pro", 16, "bold"))
@@ -151,12 +144,6 @@ lbl_percent.pack(pady=10)
 
 lbl_moisttext = ttk.Label(root, text="Waiting for sensor data...", font=("SF Pro", 16, "bold"))
 lbl_moisttext.pack(pady=10)
-
-com_var = tk.StringVar()
-com_ports = list_serial_ports()
-com_var.set(com_ports[0] if com_ports else "No COM ports found")
-com_menu = ttk.OptionMenu(root, com_var, *com_ports)
-com_menu.pack(pady=10)
 
 lbl_status = ttk.Label(root, text="", font=("SF Pro", 10, "bold"))
 lbl_status.pack(pady=10)

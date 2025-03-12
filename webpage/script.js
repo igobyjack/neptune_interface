@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
     // DOM elements
-    const comPortSelect = document.getElementById('com-port');
     const toggleSensorButton = document.getElementById('toggle-sensor');
     const getWeatherButton = document.getElementById('get-weather');
     const cityNameInput = document.getElementById('city-name');
@@ -14,28 +13,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let serialPort = null;
     let currentMoisturePercent = 0;
     let weatherForecastData = null;
-
-    // Serial port functions
-    async function listSerialPorts() {
-        try {
-            const ports = await navigator.serial.getPorts();
-            comPortSelect.innerHTML = '';
-            
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = 'Select COM Port';
-            comPortSelect.appendChild(defaultOption);
-            
-            ports.forEach(port => {
-                const option = document.createElement('option');
-                option.value = port;
-                option.textContent = port.getInfo().usbVendorId + ':' + port.getInfo().usbProductId;
-                comPortSelect.appendChild(option);
-            });
-        } catch (error) {
-            console.error('Error listing serial ports:', error);
-        }
-    }
 
     async function startReading() {
         try {
@@ -333,7 +310,4 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listeners
     toggleSensorButton.addEventListener('click', toggleStartStop);
     getWeatherButton.addEventListener('click', fetchWeatherData);
-
-    // Initialize the app
-    listSerialPorts();
 });
