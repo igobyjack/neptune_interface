@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const data = JSON.parse(event.data);
         const sensorValue = parseInt(data.value);
         const percent = parseInt(data.percent);
-        updateSensorData(sensorValue, percent, getMoistText(percent));
+        updateMoistureData(sensorValue, percent, getMoistText(percent));
     };
 
     async function startReading() {
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 const sensorValue = parseInt(trimmedLine);
                                 if (!isNaN(sensorValue)) {
                                     const percent = moistPercent(sensorValue);
-                                    updateSensorData(sensorValue, percent, getMoistText(percent));
+                                    updateMoistureData(sensorValue, percent, getMoistText(percent));
                                 }
                             } catch (e) {
                                 console.error('Error parsing sensor data:', e);
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Helper functions
-    function updateSensorData(value, percent, moistureText) {
+    function updateMoistureData(value, percent, moistureText) {
         sensorValueSpan.textContent = value;
         sensorPercentSpan.textContent = `${percent}%`;
         sensorMoistureTextSpan.textContent = moistureText;
