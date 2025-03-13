@@ -1,37 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live USB Data</title>
-    <link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live USB Data</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      line-height: 1.6;
+    }
+    #data-container {
+      border: 1px solid #ddd;
+      padding: 10px;
+      max-height: 500px;
+      overflow-y: auto;
+      background-color: #f9f9f9;
+    }
+    .data-item {
+      margin: 5px 0;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    h1 {
+      color: #333;
+    }
+    .status {
+      margin: 10px 0;
+      font-weight: bold;
+    }
+    .connected {
+      color: green;
+    }
+    .disconnected {
+      color: red;
+    }
+  </style>
 </head>
 <body>
-    <h1>Live Data from USB</h1>
-    <div id="data-container"></div>
-    <script>
-        const dataContainer = document.getElementById('data-container');
-        // Replace YOUR_PI_IP with the actual IP address of your Raspberry Pi on the local network.
-        const websocket = new WebSocket('ws://YOUR_PI_IP:8765');
+  <h1>Live Data from USB</h1>
+  <div class="status" id="connection-status">Connection status: <span class="disconnected">Disconnected</span></div>
+  <div id="data-container"></div>
+  
+  <script>
+    const dataContainer = document.getElementById('data-container');
+    const statusDisplay = document.getElementById('connection-status');
+    // Use your Pi's IP address on the network
+    const websocket = new WebSocket('ws://192.168.4.1:8765');
+    
+    function updateStatus(connected) {
+      const statusSpan = statusDisplay.querySelector('span');
+      if (connected) {
+        statusSpan.textContent = 'Connected';
+        statusSpan.className = 'connected';
+      } else {
+        statusSpan.textContent = 'Disconnected';
+        statusSpan.className = 'disconnected';
+      }
+    }
 
-        websocket.onopen = function() {
-            console.log('WebSocket connection established.');
-        };
+    websocket.onopen = function() {
+      console.log('WebSocket connection established.');
+      updateStatus(true);
+    };
 
-        websocket.onmessage = function(event) {
-            // Update the webpage with the new data. Here we append a new paragraph.
-            const newData = document.createElement('p');
-            newData.textContent = event.data;
-            dataContainer.appendChild(newData);
-        };
+    websocket.onmessage = function(event) {
+      console.log('Received data:', event.data);
+      
+      // Create a new element for the data
+      const dataElement = document.createElement('div');
+      dataElement.className = 'data-item';
+      dataElement.textContent = event.data;
+      
+      // Add the new data at the top
+      dataContainer.insertBefore(dataElement, dataContainer.firstChild);
+      
+      // Limit the number of displayed items (optional)
+      if (dataContainer.children.length > 100) {
+        dataContainer.removeChild(dataContainer.lastChild);
+      }
+    };
 
-        websocket.onerror = function(error) {
-            console.error('WebSocket error:', error);
-        };
+    websocket.onerror = function(error) {
+      console.error('WebSocket error:', error);
+      updateStatus(false);
+    };
 
-        websocket.onclose = function() {
-            console.log('WebSocket connection closed.');
-        };
-    </script>
+    websocket.onclose = function() {
+      console.log('WebSocket connection closed.');
+      updateStatus(false);
+      
+      // Optional: Attempt to reconnect after a delay
+      setTimeout(function() {
+        console.log('Attempting to reconnect...');
+        location.reload();
+      }, 5000);
+    };
+  </script>
 </body>
 </html>
