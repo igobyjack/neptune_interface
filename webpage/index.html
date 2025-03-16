@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Soil Moisture Monitor</title>
+  <title>Neptune Systems Interface</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -17,20 +17,6 @@
     h1 {
       color: #333;
       text-align: center;
-    }
-    #data-container {
-      border: 1px solid #ddd;
-      padding: 15px;
-      max-height: 250px;
-      overflow-y: auto;
-      background-color: #f9f9f9;
-      border-radius: 5px;
-      margin-top: 20px;
-    }
-    .data-item {
-      margin: 5px 0;
-      padding: 8px;
-      border-bottom: 1px solid #eee;
     }
     .status {
       margin: 10px 0;
@@ -88,10 +74,30 @@
       font-weight: bold;
       margin-right: 10px;
     }
+    .recommendation {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      font-weight: bold;
+      text-align: center;
+      transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
+    }
+    .recommendation.dry {
+      background-color: #ffebee;
+      color: #c62828;
+    }
+    .recommendation.optimal {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+    .recommendation.wet {
+      background-color: #e3f2fd;
+      color: #1565c0;
+    }
   </style>
 </head>
 <body>
-  <h1>Soil Moisture Monitor</h1>
+  <h1>Neptune Systems Interface</h1>
   
   <div class="status" id="connection-status">
     Connection status: <span class="disconnected">Disconnected</span>
@@ -110,14 +116,16 @@
     
     <div class="scale">
       <div>Dry</div>
-      <div>Optimal</div>
       <div>Wet</div>
     </div>
+    
   </div>
   
-  <h3>Recent Data</h3>
-  <div id="data-container"></div>
-  
+  <div class="recommendation" id="watering-recommendation">
+    Waiting for moisture data...
+  </div>
+
+
   <script>
     const dataContainer = document.getElementById('data-container');
     const statusDisplay = document.getElementById('connection-status');
@@ -125,6 +133,7 @@
     const moisturePercentage = document.getElementById('moisture-percentage');
     const moistureBar = document.getElementById('moisture-bar');
     const moistureBarText = document.getElementById('moisture-bar-text');
+    const wateringRecommendation = document.getElementById('watering-recommendation');
     
     // Use your Pi's IP address on the network
     const websocket = new WebSocket('ws://192.168.4.1:8765');
@@ -135,6 +144,8 @@
       if (isNaN(rawValue)) return null;
       
       const percentage = (rawValue * (-1/259) + 1.78) * 100;
+      if (percentage < 0) return 0;
+      if (percentage > 100) return 100;
       return Math.min(Math.max(percentage, 0), 100); // Clamp between 0-100%
     }
     
@@ -149,6 +160,19 @@
       } else {
         // Too wet - blue
         return '#3498db';
+      }
+    }
+    
+    function getWateringRecommendation(percentage) {
+      if (percentage < 30) {
+        wateringRecommendation.textContent = "Water immediately! Soil is too dry.";
+        wateringRecommendation.className = "recommendation dry";
+      } else if (percentage >= 30 && percentage <= 70) {
+        wateringRecommendation.textContent = "Moisture level is optimal. No watering needed.";
+        wateringRecommendation.className = "recommendation optimal";
+      } else {
+        wateringRecommendation.textContent = "Soil is too wet. Avoid watering until drier.";
+        wateringRecommendation.className = "recommendation wet";
       }
     }
     
@@ -189,6 +213,9 @@
         // Update the progress bar
         moistureBar.style.width = percentage + '%';
         moistureBar.style.backgroundColor = getMoistureColor(percentage);
+        
+        // Update watering recommendation
+        getWateringRecommendation(percentage);
       }
       
       // Create a new element for the data with timestamp
@@ -199,11 +226,13 @@
       dataElement.textContent = `[${timestamp}] Raw: ${value} - Moisture: ${percentage !== null ? percentage.toFixed(1) + '%' : 'N/A'}`;
       
       // Add the new data at the top
-      dataContainer.insertBefore(dataElement, dataContainer.firstChild);
-      
-      // Limit the number of displayed items (optional)
-      if (dataContainer.children.length > 50) {
-        dataContainer.removeChild(dataContainer.lastChild);
+      if (dataContainer) {
+        dataContainer.insertBefore(dataElement, dataContainer.firstChild);
+        
+        // Limit the number of displayed items (optional)
+        if (dataContainer.children.length > 50) {
+          dataContainer.removeChild(dataContainer.lastChild);
+        }
       }
     };
 
