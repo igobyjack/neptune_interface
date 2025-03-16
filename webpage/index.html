@@ -1,52 +1,227 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neptune Systems Interface (Raspberry Pi)</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soil Moisture Monitor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      line-height: 1.6;
+      background-color: #f5f5f5;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    #data-container {
+      border: 1px solid #ddd;
+      padding: 15px;
+      max-height: 250px;
+      overflow-y: auto;
+      background-color: #f9f9f9;
+      border-radius: 5px;
+      margin-top: 20px;
+    }
+    .data-item {
+      margin: 5px 0;
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+    }
+    .status {
+      margin: 10px 0;
+      font-weight: bold;
+      text-align: center;
+    }
+    .connected {
+      color: green;
+    }
+    .disconnected {
+      color: red;
+    }
+    .moisture-container {
+      margin: 20px 0;
+      padding: 15px;
+      background-color: white;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .moisture-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .moisture-bar-container {
+      width: 100%;
+      background-color: #e0e0e0;
+      border-radius: 10px;
+      height: 30px;
+      margin: 10px 0;
+      position: relative;
+    }
+    .moisture-bar {
+      height: 100%;
+      border-radius: 10px;
+      width: 0%;
+      transition: width 0.5s ease-in-out, background-color 0.5s ease-in-out;
+    }
+    .moisture-percentage {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #000;
+      font-weight: bold;
+      text-shadow: 1px 1px 1px rgba(255,255,255,0.7);
+    }
+    .scale {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #666;
+    }
+    .label {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+  </style>
 </head>
 <body>
-    <h1>Neptune Systems Interface</h1>
-
-    <!-- Sensor Section -->
-    <div class="section sensor-section">
-        <h2>Moisture Sensor</h2>
-        <div class="sensor-data">
-            <div class="data-row">
-                <span class="label">Raw Value:</span>
-                <span id="sensor-value">Waiting for data...</span>
-            </div>
-            <div class="data-row">
-                <span class="label">Moisture Level:</span>
-                <span id="sensor-percent">Waiting for data...</span>
-            </div>
-            <div class="data-row">
-                <span class="label">Condition:</span>
-                <span id="sensor-moisture-text">Waiting for data...</span>
-            </div>
-            <div class="data-row">
-                <span class="label">Moisture Bar:</span>
-                <div class="moisture-bar-container">
-                    <div id="moisture-bar" class="moisture-bar"></div>
-                    <span id="moisture-bar-text" class="moisture-bar-text">0%</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="controls">
-            <button id="toggle-sensor">Start</button>
-        </div>
+  <h1>Soil Moisture Monitor</h1>
+  
+  <div class="status" id="connection-status">
+    Connection status: <span class="disconnected">Disconnected</span>
+  </div>
+  
+  <div class="moisture-container">
+    <div class="moisture-info">
+      <div><span class="label">Raw Value:</span> <span id="raw-value">--</span></div>
+      <div><span class="label">Moisture Level:</span> <span id="moisture-percentage">--</span></div>
     </div>
     
-    <!-- Recommendation Section -->
-    <div class="section recommendation-section">
-        <h2>Watering Recommendation</h2>
-        <div id="watering-recommendation" class="recommendation-text">
-            Connect to sensor to get watering recommendations.
-        </div>
+    <div class="moisture-bar-container">
+      <div class="moisture-bar" id="moisture-bar"></div>
+      <div class="moisture-percentage" id="moisture-bar-text">--</div>
     </div>
+    
+    <div class="scale">
+      <div>Dry</div>
+      <div>Optimal</div>
+      <div>Wet</div>
+    </div>
+  </div>
+  
+  <h3>Recent Data</h3>
+  <div id="data-container"></div>
+  
+  <script>
+    const dataContainer = document.getElementById('data-container');
+    const statusDisplay = document.getElementById('connection-status');
+    const rawValue = document.getElementById('raw-value');
+    const moisturePercentage = document.getElementById('moisture-percentage');
+    const moistureBar = document.getElementById('moisture-bar');
+    const moistureBarText = document.getElementById('moisture-bar-text');
+    
+    // Use your Pi's IP address on the network
+    const websocket = new WebSocket('ws://192.168.4.1:8765');
+    
+    function calculateMoisturePercentage(value) {
+      // Use the provided formula: (value * (-1/259) + 1.78) * 100
+      const rawValue = parseFloat(value);
+      if (isNaN(rawValue)) return null;
+      
+      const percentage = (rawValue * (-1/259) + 1.78) * 100;
+      return Math.min(Math.max(percentage, 0), 100); // Clamp between 0-100%
+    }
+    
+    function getMoistureColor(percentage) {
+      if (percentage < 30) {
+        // Too dry - dark orange to light orange gradient
+        const intensity = percentage / 30;
+        return `rgb(200, ${Math.floor(89 + intensity * 50)}, 0)`;
+      } else if (percentage >= 30 && percentage <= 70) {
+        // Optimal moisture range - green
+        return '#2ecc71';
+      } else {
+        // Too wet - blue
+        return '#3498db';
+      }
+    }
+    
+    function updateStatus(connected) {
+      const statusSpan = statusDisplay.querySelector('span');
+      if (connected) {
+        statusSpan.textContent = 'Connected';
+        statusSpan.className = 'connected';
+      } else {
+        statusSpan.textContent = 'Disconnected';
+        statusSpan.className = 'disconnected';
+      }
+    }
 
-    <script src="script.js"></script>
+    websocket.onopen = function() {
+      console.log('WebSocket connection established.');
+      updateStatus(true);
+    };
+
+    websocket.onmessage = function(event) {
+      console.log('Received data:', event.data);
+      
+      // Try to parse the data - it might be a raw number or contain other info
+      let value = event.data.trim();
+      
+      // Update the raw value display
+      rawValue.textContent = value;
+      
+      // Calculate moisture percentage
+      const percentage = calculateMoisturePercentage(value);
+      
+      if (percentage !== null) {
+        // Format to 1 decimal place
+        const formattedPercentage = percentage.toFixed(1) + '%';
+        moisturePercentage.textContent = formattedPercentage;
+        moistureBarText.textContent = formattedPercentage;
+        
+        // Update the progress bar
+        moistureBar.style.width = percentage + '%';
+        moistureBar.style.backgroundColor = getMoistureColor(percentage);
+      }
+      
+      // Create a new element for the data with timestamp
+      const dataElement = document.createElement('div');
+      dataElement.className = 'data-item';
+      const now = new Date();
+      const timestamp = now.toLocaleTimeString();
+      dataElement.textContent = `[${timestamp}] Raw: ${value} - Moisture: ${percentage !== null ? percentage.toFixed(1) + '%' : 'N/A'}`;
+      
+      // Add the new data at the top
+      dataContainer.insertBefore(dataElement, dataContainer.firstChild);
+      
+      // Limit the number of displayed items (optional)
+      if (dataContainer.children.length > 50) {
+        dataContainer.removeChild(dataContainer.lastChild);
+      }
+    };
+
+    websocket.onerror = function(error) {
+      console.error('WebSocket error:', error);
+      updateStatus(false);
+    };
+
+    websocket.onclose = function() {
+      console.log('WebSocket connection closed.');
+      updateStatus(false);
+      
+      // Attempt to reconnect after a delay
+      setTimeout(function() {
+        console.log('Attempting to reconnect...');
+        window.location.reload();
+      }, 5000);
+    };
+  </script>
 </body>
 </html>
