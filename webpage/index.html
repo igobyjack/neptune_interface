@@ -94,6 +94,86 @@
       background-color: #e3f2fd;
       color: #1565c0;
     }
+    /* Watering Plan Styles */
+    .watering-plan-container {
+      margin: 20px 0;
+      padding: 15px;
+      background-color: white;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .watering-plan-container h2 {
+      text-align: center;
+      margin-top: 0;
+      color: #333;
+    }
+    .watering-plan {
+      padding: 15px;
+      border-radius: 5px;
+      font-weight: bold;
+      text-align: center;
+      background-color: #f5f5f5;
+    }
+    .watering-plan.water {
+      background-color: #e8f5e9;
+      color: #2e7d32;
+    }
+    .watering-plan.dont-water {
+      background-color: #e3f2fd;
+      color: #1565c0;
+    }
+    /* Weather Section Styles */
+    .weather-container {
+      margin: 20px 0;
+      padding: 15px;
+      background-color: white;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .weather-container h2 {
+      text-align: center;
+      margin-top: 0;
+      color: #333;
+    }
+    .weather-forecast {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: nowrap; /* Changed from wrap to nowrap */
+      gap: 10px;
+      overflow-x: auto; /* Add horizontal scrolling if needed */
+      padding-bottom: 10px; /* Space for the scrollbar */
+    }
+    .weather-day {
+      flex: 0 0 calc(100% / 7 - 10px); /* Fixed width calculation for 7 days */
+      min-width: 80px;
+      max-width: calc(100% / 7 - 10px); /* Ensure maximum width too */
+      text-align: center;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 5px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .weather-day-name {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .weather-icon {
+      font-size: 24px;
+      margin: 5px 0;
+    }
+    .weather-temp {
+      margin: 5px 0;
+    }
+    .weather-precip {
+      font-size: 12px;
+      color: #666;
+    }
+    @media (max-width: 600px) {
+      .weather-day {
+        min-width: 80px;
+        flex: 0 0 80px; /* Fixed width for small screens */
+      }
+    }
   </style>
 </head>
 <body>
@@ -124,7 +204,22 @@
   <div class="recommendation" id="watering-recommendation">
     Waiting for moisture data...
   </div>
-
+  
+  <!-- Weather Forecast Section -->
+  <div class="weather-container">
+    <h2>Forecast</h2>
+    <div class="weather-forecast">
+      <!-- Weather cards will be dynamically populated -->
+    </div>
+  </div>
+  
+  <!-- Combined Watering Plan -->
+  <div class="watering-plan-container">
+    <h2>Watering Plan</h2>
+    <div class="watering-plan" id="watering-plan">
+      Waiting for moisture and weather data...
+    </div>
+  </div>
 
   <script>
     const dataContainer = document.getElementById('data-container');
@@ -134,7 +229,12 @@
     const moistureBar = document.getElementById('moisture-bar');
     const moistureBarText = document.getElementById('moisture-bar-text');
     const wateringRecommendation = document.getElementById('watering-recommendation');
+    const weatherForecast = document.querySelector('.weather-forecast');
+    const wateringPlan = document.getElementById('watering-plan');
     
+    let currentMoisturePercentage = null;
+    let currentWeatherData = null;
+
     // Use your Pi's IP address on the network
     const websocket = new WebSocket('ws://192.168.4.1:8765');
     
@@ -192,6 +292,52 @@
       updateStatus(true);
     };
 
+    function updateWateringPlan() {
+      // If we don't have both moisture and weather data, can't make a recommendation
+      if (currentMoisturePercentage === null || !currentWeatherData) {
+        wateringPlan.textContent = "Waiting for complete data...";
+        wateringPlan.className = "watering-plan";
+        return;
+      }
+      
+      // Check for rain in the next 3 days
+      const rainInNext3Days = currentWeatherData.slice(0, 3).some(day => {
+        const precipPercentage = parseInt(day.precipitation);
+        return precipPercentage >= 50; // Consider 50% or higher chance of rain as significant
+      });
+      
+      let planText = "";
+      let planClass = "";
+      
+      if (currentMoisturePercentage > 70) {
+        // Soil is already too wet
+        planText = "Do not water your yard. Soil is already wet and may lead to overwatering.";
+        planClass = "dont-water";
+      } else if (currentMoisturePercentage >= 30 && currentMoisturePercentage <= 70) {
+        // Optimal moisture range
+        if (rainInNext3Days) {
+          planText = "No need to water your yard. Soil moisture is good and rain is expected in the next few days.";
+          planClass = "dont-water";
+        } else {
+          planText = "Consider light watering if no rain in the extended forecast, but soil moisture is currently adequate.";
+          planClass = "water";
+        }
+      } else {
+        // Soil is too dry
+        if (rainInNext3Days) {
+          planText = "Soil is dry, but rain is expected soon. Consider waiting for rain before watering.";
+          planClass = "dont-water";
+        } else {
+          planText = "Water your yard as soon as possible. Soil is dry and no significant rain is expected.";
+          planClass = "water";
+        }
+      }
+      
+      wateringPlan.textContent = planText;
+      wateringPlan.className = `watering-plan ${planClass}`;
+    }
+    
+    // Update the websocket.onmessage function to store current moisture percentage and update plan
     websocket.onmessage = function(event) {
       console.log('Received data:', event.data);
       
@@ -205,6 +351,9 @@
       const percentage = calculateMoisturePercentage(value);
       
       if (percentage !== null) {
+        // Store current moisture percentage for watering plan
+        currentMoisturePercentage = percentage;
+        
         // Format to 1 decimal place
         const formattedPercentage = percentage.toFixed(1) + '%';
         moisturePercentage.textContent = formattedPercentage;
@@ -216,6 +365,9 @@
         
         // Update watering recommendation
         getWateringRecommendation(percentage);
+        
+        // Update integrated watering plan
+        updateWateringPlan();
       }
       
       // Create a new element for the data with timestamp
@@ -251,6 +403,60 @@
         window.location.reload();
       }, 5000);
     };
+
+    function fetchWeatherForecast() {
+      // Normally you would fetch from a weather API like:
+      // fetch('https://api.weatherapi.com/v1/forecast.json?key=YOUR_API_KEY&q=YOUR_LOCATION&days=7')
+      //   .then(response => response.json())
+      //   .then(data => displayWeatherForecast(data));
+      
+      // Placeholder data
+      const weatherData = [
+        { day: 'Mon', icon: '☀️', temp: '72°F', precipitation: '0%' },
+        { day: 'Tue', icon: '⛅', temp: '68°F', precipitation: '10%' },
+        { day: 'Wed', icon: '🌧️', temp: '65°F', precipitation: '70%' },
+        { day: 'Thu', icon: '🌧️', temp: '64°F', precipitation: '80%' },
+        { day: 'Fri', icon: '⛅', temp: '69°F', precipitation: '20%' },
+        { day: 'Sat', icon: '☀️', temp: '75°F', precipitation: '0%' },
+        { day: 'Sun', icon: '☀️', temp: '78°F', precipitation: '0%' }
+      ];
+      
+      // Store current weather data for watering plan
+      currentWeatherData = weatherData;
+      
+      displayWeatherForecast(weatherData);
+      
+      // Update integrated watering plan
+      updateWateringPlan();
+    }
+    
+    function displayWeatherForecast(forecast) {
+      weatherForecast.innerHTML = '';
+      
+      forecast.forEach(day => {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'weather-day';
+        
+        dayElement.innerHTML = `
+          <div class="weather-day-name">${day.day}</div>
+          <div class="weather-icon">${day.icon}</div>
+          <div class="weather-temp">${day.temp}</div>
+          <div class="weather-precip">${day.precipitation} precip</div>
+        `;
+        
+        weatherForecast.appendChild(dayElement);
+      });
+      
+      // Store current weather data for watering plan
+      currentWeatherData = forecast;
+      
+      // Update integrated watering plan
+      updateWateringPlan();
+    }
+    
+    // Load weather forecast on page load
+    fetchWeatherForecast();
+
   </script>
 </body>
 </html>
