@@ -200,11 +200,7 @@
     </div>
     
   </div>
-  
-  <div class="recommendation" id="watering-recommendation">
-    Waiting for moisture data...
-  </div>
-  
+    
   <!-- Weather Forecast Section -->
   <div class="weather-container">
     <h2>Forecast</h2>
@@ -228,7 +224,6 @@
     const moisturePercentage = document.getElementById('moisture-percentage');
     const moistureBar = document.getElementById('moisture-bar');
     const moistureBarText = document.getElementById('moisture-bar-text');
-    const wateringRecommendation = document.getElementById('watering-recommendation');
     const weatherForecast = document.querySelector('.weather-forecast');
     const wateringPlan = document.getElementById('watering-plan');
     
@@ -263,18 +258,6 @@
       }
     }
     
-    function getWateringRecommendation(percentage) {
-      if (percentage < 30) {
-        wateringRecommendation.textContent = "Water immediately! Soil is too dry.";
-        wateringRecommendation.className = "recommendation dry";
-      } else if (percentage >= 30 && percentage <= 70) {
-        wateringRecommendation.textContent = "Moisture level is optimal. No watering needed.";
-        wateringRecommendation.className = "recommendation optimal";
-      } else {
-        wateringRecommendation.textContent = "Soil is too wet. Avoid watering until drier.";
-        wateringRecommendation.className = "recommendation wet";
-      }
-    }
     
     function updateStatus(connected) {
       const statusSpan = statusDisplay.querySelector('span');
