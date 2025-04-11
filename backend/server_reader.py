@@ -3,6 +3,8 @@ import websockets
 import serial
 import json
 from datetime import datetime
+import random
+import argparse
 
 # Configuration
 HOST = "0.0.0.0"  # Bind to all network interfaces
@@ -15,6 +17,13 @@ connected_clients = set()
 
 # Flag to control reading from serial
 running = True
+
+def generate_mock_data():
+    """Generate mock data to simulate sensor readings"""
+    while running:
+        mock_value = random.randint(0, 1023)
+        yield f"{mock_value}\n"
+        asyncio.sleep(0.5)
 
 async def send_to_clients(data):
     """Send data to all connected WebSocket clients"""
@@ -55,6 +64,14 @@ async def read_serial():
             ser.close()
             print("Serial port closed")
 
+async def read_mock_data():
+    """Read mock data and send to all WebSocket clients"""
+    print("Using mock data generator")
+    mock_data_generator = generate_mock_data()
+    while running:
+        data = next(mock_data_generator)
+        await send_to_clients(data)
+
 async def handle_websocket(websocket):
     """Handle WebSocket client connections"""
     connected_clients.add(websocket)
@@ -72,10 +89,13 @@ async def handle_websocket(websocket):
         connected_clients.remove(websocket)
         print(f"Client disconnected: {client_info}")
 
-async def main():
+async def main(use_mock_data):
     """Main function to start the WebSocket server and serial reader"""
     # Start the serial reading task
-    serial_task = asyncio.create_task(read_serial())
+    if use_mock_data:
+        serial_task = asyncio.create_task(read_mock_data())
+    else:
+        serial_task = asyncio.create_task(read_serial())
     
     # Start the WebSocket server
     server = await websockets.serve(handle_websocket, HOST, PORT)
@@ -91,7 +111,11 @@ async def main():
         await serial_task
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Neptune Interface Server")
+    parser.add_argument('--mock', action='store_true', help="Use mock data generator")
+    args = parser.parse_args()
+
     try:
-        asyncio.run(main())
+        asyncio.run(main(args.mock))
     except KeyboardInterrupt:
         print("Server stopped by user")
