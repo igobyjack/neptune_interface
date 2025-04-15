@@ -173,8 +173,17 @@
         min-width: 80px;
         flex: 0 0 80px; /* Fixed width for small screens */
       }
+
+    .chart-container {
+      position: relative;
+      height: 250px;
+      width: 100%;
+      margin: 15px 0;
+    }
+
     }
   </style>
+<script src="js/chart.js"></script>
 </head>
 <body>
   <h1>Neptune Systems Interface</h1>
@@ -200,6 +209,7 @@
     </div>
     
   </div>
+
     
   <!-- Weather Forecast Section -->
   <div class="weather-container">
@@ -214,6 +224,16 @@
     <h2>Watering Plan</h2>
     <div class="watering-plan" id="watering-plan">
       Waiting for moisture and weather data...
+    </div>
+  </div>
+
+</div>
+    
+  <!-- Moisture Graph Section -->
+  <div class="moisture-container">
+    <h2>Moisture Level History</h2>
+    <div class="chart-container">
+      <canvas id="moistureChart"></canvas>
     </div>
   </div>
 
@@ -320,7 +340,119 @@
       wateringPlan.className = `watering-plan ${planClass}`;
     }
     
-    // Update the websocket.onmessage function to store current moisture percentage and update plan
+    // Store moisture history data
+    let moistureHistory = {
+      timestamps: [],
+      values: []
+    };
+    const MAX_DATA_POINTS = 50; // Maximum number of data points to show
+    let lastPlotTime = null; // Track when we last plotted a point
+    const PLOT_INTERVAL = 30 * 60 * 1000; // 30 minutes in milliseconds
+    
+    // Functions to save and load moisture history
+    function saveMoistureHistory() {
+      localStorage.setItem('moistureHistory', JSON.stringify(moistureHistory));
+      localStorage.setItem('lastPlotTime', lastPlotTime ? lastPlotTime.toString() : null);
+    }
+    
+    function loadMoistureHistory() {
+      const savedData = localStorage.getItem('moistureHistory');
+      lastPlotTime = localStorage.getItem('lastPlotTime');
+      if (lastPlotTime) {
+        lastPlotTime = new Date(parseInt(lastPlotTime));
+      }
+      
+      if (savedData) {
+        return JSON.parse(savedData);
+      }
+      return {
+        timestamps: [],
+        values: []
+      };
+    }
+    
+    // Load saved moisture history on page load
+    moistureHistory = loadMoistureHistory();
+    
+    // Function to check if enough time has passed to plot a new point
+    function shouldPlotNewPoint() {
+      const now = new Date();
+      if (!lastPlotTime) {
+        return true; // First point should always be plotted
+      }
+      
+      // Check if PLOT_INTERVAL milliseconds have passed
+      return (now - lastPlotTime) >= PLOT_INTERVAL;
+    }
+    
+    // Initialize moisture chart with loaded data
+    const ctx = document.getElementById('moistureChart').getContext('2d');
+    const moistureChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: moistureHistory.timestamps,
+        datasets: [{
+          label: 'Moisture Level (%)',
+          data: moistureHistory.values,
+          backgroundColor: 'rgba(46, 204, 113, 0.2)',
+          borderColor: 'rgba(46, 204, 113, 1)',
+          borderWidth: 2,
+          pointRadius: 3,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            title: {
+              display: true,
+              text: 'Moisture (%)'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Time'
+            }
+          }
+        }
+      }
+    });
+    
+    function updateChart(timestamp, value) {
+      // Check if we should add a new point
+      if (shouldPlotNewPoint()) {
+        // Add new data point
+        moistureHistory.timestamps.push(timestamp);
+        moistureHistory.values.push(value);
+        
+        // Update the last plot time
+        lastPlotTime = new Date();
+        
+        // Remove old data points if we exceed the maximum
+        if (moistureHistory.timestamps.length > MAX_DATA_POINTS) {
+          moistureHistory.timestamps.shift();
+          moistureHistory.values.shift();
+        }
+        
+        // Update chart
+        moistureChart.update();
+        
+        // Save to localStorage
+        saveMoistureHistory();
+        
+        console.log(`Added new chart point at ${timestamp}: ${value}%`);
+      } else {
+        // Update the latest value without adding a new point
+        console.log(`Skipped adding point, not enough time passed since last plot`);
+      }
+    }
+    
+    // Modify the websocket.onmessage function to update the chart
     websocket.onmessage = function(event) {
       console.log('Received data:', event.data);
       
@@ -346,28 +478,20 @@
         moistureBar.style.width = percentage + '%';
         moistureBar.style.backgroundColor = getMoistureColor(percentage);
         
+        // Get current timestamp
+        const now = new Date();
+        const timestamp = now.toLocaleTimeString();
+        
+        // Update the chart
+        updateChart(timestamp, percentage);
+        
         // Update watering recommendation
-        getWateringRecommendation(percentage);
+        if (typeof getWateringRecommendation === 'function') {
+          getWateringRecommendation(percentage);
+        }
         
         // Update integrated watering plan
         updateWateringPlan();
-      }
-      
-      // Create a new element for the data with timestamp
-      const dataElement = document.createElement('div');
-      dataElement.className = 'data-item';
-      const now = new Date();
-      const timestamp = now.toLocaleTimeString();
-      dataElement.textContent = `[${timestamp}] Raw: ${value} - Moisture: ${percentage !== null ? percentage.toFixed(1) + '%' : 'N/A'}`;
-      
-      // Add the new data at the top
-      if (dataContainer) {
-        dataContainer.insertBefore(dataElement, dataContainer.firstChild);
-        
-        // Limit the number of displayed items (optional)
-        if (dataContainer.children.length > 50) {
-          dataContainer.removeChild(dataContainer.lastChild);
-        }
       }
     };
 
