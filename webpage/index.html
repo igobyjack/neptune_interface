@@ -211,15 +211,15 @@
   </div>
 
     
-  <!-- Weather Forecast Section -->
+  
   <div class="weather-container">
     <h2>Forecast</h2>
     <div class="weather-forecast">
-      <!-- Weather cards will be dynamically populated -->
+      
     </div>
   </div>
   
-  <!-- Combined Watering Plan -->
+  
   <div class="watering-plan-container">
     <h2>Watering Plan</h2>
     <div class="watering-plan" id="watering-plan">
@@ -229,7 +229,7 @@
 
 </div>
     
-  <!-- Moisture Graph Section -->
+  
   <div class="moisture-container">
     <h2>Moisture Level History</h2>
     <div class="chart-container">
@@ -250,11 +250,11 @@
     let currentMoisturePercentage = null;
     let currentWeatherData = null;
 
-    // Use your Pi's IP address on the network
+    
     const websocket = new WebSocket('ws://192.168.4.1:8765');
     
+      
     function calculateMoisturePercentage(value) {
-      // Use the provided formula: (value * (-1/259) + 1.78) * 100
       const rawValue = parseFloat(value);
       if (isNaN(rawValue)) return null;
       
@@ -266,14 +266,12 @@
     
     function getMoistureColor(percentage) {
       if (percentage < 30) {
-        // Too dry - dark orange to light orange gradient
+       
         const intensity = percentage / 30;
         return `rgb(200, ${Math.floor(89 + intensity * 50)}, 0)`;
       } else if (percentage >= 30 && percentage <= 70) {
-        // Optimal moisture range - green
         return '#2ecc71';
       } else {
-        // Too wet - blue
         return '#3498db';
       }
     }
@@ -296,28 +294,24 @@
     };
 
     function updateWateringPlan() {
-      // If we don't have both moisture and weather data, can't make a recommendation
       if (currentMoisturePercentage === null || !currentWeatherData) {
         wateringPlan.textContent = "Waiting for complete data...";
         wateringPlan.className = "watering-plan";
         return;
       }
       
-      // Check for rain in the next 3 days
       const rainInNext3Days = currentWeatherData.slice(0, 3).some(day => {
         const precipPercentage = parseInt(day.precipitation);
-        return precipPercentage >= 50; // Consider 50% or higher chance of rain as significant
+        return precipPercentage >= 50; 
       });
       
       let planText = "";
       let planClass = "";
       
       if (currentMoisturePercentage > 70) {
-        // Soil is already too wet
         planText = "Do not water your yard. Soil is already wet and may lead to overwatering.";
         planClass = "dont-water";
       } else if (currentMoisturePercentage >= 30 && currentMoisturePercentage <= 70) {
-        // Optimal moisture range
         if (rainInNext3Days) {
           planText = "No need to water your yard. Soil moisture is good and rain is expected in the next few days.";
           planClass = "dont-water";
@@ -326,7 +320,6 @@
           planClass = "water";
         }
       } else {
-        // Soil is too dry
         if (rainInNext3Days) {
           planText = "Soil is dry, but rain is expected soon. Consider waiting for rain before watering.";
           planClass = "dont-water";
@@ -340,57 +333,40 @@
       wateringPlan.className = `watering-plan ${planClass}`;
     }
     
-    // Store moisture history data
+    let dataCounter = 0; // Counter for received data points
+
+    // Remove timestamps from moistureHistory
     let moistureHistory = {
-      timestamps: [],
+      indices: [],
       values: []
     };
-    const MAX_DATA_POINTS = 50; // Maximum number of data points to show
-    let lastPlotTime = null; // Track when we last plotted a point
-    const PLOT_INTERVAL = 30 * 60 * 1000; // 30 minutes in milliseconds
+    const MAX_DATA_POINTS = 50; 
     
-    // Functions to save and load moisture history
     function saveMoistureHistory() {
       localStorage.setItem('moistureHistory', JSON.stringify(moistureHistory));
-      localStorage.setItem('lastPlotTime', lastPlotTime ? lastPlotTime.toString() : null);
     }
     
     function loadMoistureHistory() {
       const savedData = localStorage.getItem('moistureHistory');
-      lastPlotTime = localStorage.getItem('lastPlotTime');
-      if (lastPlotTime) {
-        lastPlotTime = new Date(parseInt(lastPlotTime));
-      }
-      
       if (savedData) {
         return JSON.parse(savedData);
       }
       return {
-        timestamps: [],
+        indices: [],
         values: []
       };
     }
     
-    // Load saved moisture history on page load
     moistureHistory = loadMoistureHistory();
+    // Ensure arrays exist (fix for corrupted/old localStorage)
+    if (!Array.isArray(moistureHistory.indices)) moistureHistory.indices = [];
+    if (!Array.isArray(moistureHistory.values)) moistureHistory.values = [];
     
-    // Function to check if enough time has passed to plot a new point
-    function shouldPlotNewPoint() {
-      const now = new Date();
-      if (!lastPlotTime) {
-        return true; // First point should always be plotted
-      }
-      
-      // Check if PLOT_INTERVAL milliseconds have passed
-      return (now - lastPlotTime) >= PLOT_INTERVAL;
-    }
-    
-    // Initialize moisture chart with loaded data
     const ctx = document.getElementById('moistureChart').getContext('2d');
     const moistureChart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: moistureHistory.timestamps,
+        labels: moistureHistory.indices,
         datasets: [{
           label: 'Moisture Level (%)',
           data: moistureHistory.values,
@@ -416,81 +392,62 @@
           x: {
             title: {
               display: true,
-              text: 'Time'
+              text: 'Points recorded every 30 minutes'
             }
           }
         }
       }
     });
-    
-    function updateChart(timestamp, value) {
-      // Check if we should add a new point
-      if (shouldPlotNewPoint()) {
-        // Add new data point
-        moistureHistory.timestamps.push(timestamp);
-        moistureHistory.values.push(value);
-        
-        // Update the last plot time
-        lastPlotTime = new Date();
-        
-        // Remove old data points if we exceed the maximum
-        if (moistureHistory.timestamps.length > MAX_DATA_POINTS) {
-          moistureHistory.timestamps.shift();
-          moistureHistory.values.shift();
-        }
-        
-        // Update chart
-        moistureChart.update();
-        
-        // Save to localStorage
-        saveMoistureHistory();
-        
-        console.log(`Added new chart point at ${timestamp}: ${value}%`);
-      } else {
-        // Update the latest value without adding a new point
-        console.log(`Skipped adding point, not enough time passed since last plot`);
+
+    function updateChart(value) {
+      dataCounter++;
+      const label = dataCounter.toString();
+
+      moistureHistory.indices.push(label);
+      moistureHistory.values.push(value);
+
+      if (moistureHistory.indices.length > MAX_DATA_POINTS) {
+        moistureHistory.indices.shift();
+        moistureHistory.values.shift();
       }
+
+      // Update chart
+      moistureChart.data.labels = moistureHistory.indices;
+      moistureChart.data.datasets[0].data = moistureHistory.values;
+      moistureChart.update();
+
+      // Save to localStorage
+      saveMoistureHistory();
+
+      console.log(`Added new chart point #${label}: ${value}%`);
     }
-    
-    // Modify the websocket.onmessage function to update the chart
+
+    // Modify the websocket.onmessage function to update the chart every 500th value
+    let receivedCount = 0;
     websocket.onmessage = function(event) {
       console.log('Received data:', event.data);
-      
-      // Try to parse the data - it might be a raw number or contain other info
+
       let value = event.data.trim();
-      
-      // Update the raw value display
       rawValue.textContent = value;
-      
-      // Calculate moisture percentage
+
       const percentage = calculateMoisturePercentage(value);
-      
+
       if (percentage !== null) {
-        // Store current moisture percentage for watering plan
         currentMoisturePercentage = percentage;
-        
-        // Format to 1 decimal place
         const formattedPercentage = percentage.toFixed(1) + '%';
         moisturePercentage.textContent = formattedPercentage;
         moistureBarText.textContent = formattedPercentage;
-        
-        // Update the progress bar
         moistureBar.style.width = percentage + '%';
         moistureBar.style.backgroundColor = getMoistureColor(percentage);
-        
-        // Get current timestamp
-        const now = new Date();
-        const timestamp = now.toLocaleTimeString();
-        
-        // Update the chart
-        updateChart(timestamp, percentage);
-        
-        // Update watering recommendation
+
+        receivedCount++;
+        if (receivedCount % 4500 === 0) {
+          updateChart(percentage);
+        }
+
         if (typeof getWateringRecommendation === 'function') {
           getWateringRecommendation(percentage);
         }
-        
-        // Update integrated watering plan
         updateWateringPlan();
       }
     };
