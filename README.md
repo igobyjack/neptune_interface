@@ -1,15 +1,11 @@
 # Neptune Lawncare Project
 
-### The system uses a microcontroller, moisture sensor, and raspberry pi. The idea was that you could stick this in your yard and it would give you an accurate say on whether to water your lawn or not, using data from the moisture sensor and the open weather api, to prevent overwatering. 
+### The system uses an aurdino microcontroller, a raspberry pi, and a basic moisture sensor.
 
-### Setup: 
+# Setup: 
 
+### sensor_reading.ino is an arduino script, written in C++, download it to your arduino and start, with the moisture sensor data plugged into A0 on the arduino.
 
+### server_reader.py is an async websocket server designed to run on the raspberry pi, reading the incoming arduino data and broadcasting it to the webpage clients. All the python scripts in testing were for figuring out how to read and format the data off the serial port, and uses tkinter. Connct the arduino to the raspberry pi via the USB port.
 
-### sensor_reading.ino is an arduino script, written in C++, it's my first real attempt at C++ and Arduino.
-
-### server_reader.py is an async websocket server designed to run on the raspberry pi, reading the incoming arduino data and broadcasting it to the webpage clients. All the python scripts in testing were for figuring out how to read and format the data off the serial port, and uses tkinter. 
-
-### the webpage lives on the pi, which is broadcasting a wifi network, so that when you connect to it, it directs you to the website where the interface and data can be found. It uses javascript to read the data coming in off the websocket, and update the page of anyone reading in real time.
-
-
+### the webpage lives on the pi, which you'll need to setup to broadcast a wifi network. I used hostapd and dnsmasq. It should work so when you connect to the pi's wifi, it directs you to the website where the interface and data can be found. The webpage is pretty standard html and javascript, since I didn't want to push the capabilities of the pi.
