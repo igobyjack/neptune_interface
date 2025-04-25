@@ -9,7 +9,7 @@ The system uses an aurdino microcontroller, a raspberry pi, and a basic moisture
 ![alt](https://github.com/igobyjack/neptune_interface/blob/main/images/sensor2.png)
 
 ## Interface
-interface images which I dont have rn would go here wheeee
+interface images which I dont have rn would go here
 
 # Setup: 
 
