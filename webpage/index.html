@@ -251,7 +251,7 @@
     let currentWeatherData = null;
 
     
-    const websocket = new WebSocket('ws://192.168.4.1:8765');
+    const websocket = new WebSocket('ws://localhost:8765');
     
       
     function calculateMoisturePercentage(value) {
@@ -360,6 +360,9 @@
     // Ensure arrays exist (fix for corrupted/old localStorage)
     if (!Array.isArray(moistureHistory.indices)) moistureHistory.indices = [];
     if (!Array.isArray(moistureHistory.values)) moistureHistory.values = [];
+    // Ensure arrays exist (fix for corrupted/old localStorage)
+    if (!Array.isArray(moistureHistory.indices)) moistureHistory.indices = [];
+    if (!Array.isArray(moistureHistory.values)) moistureHistory.values = [];
     
     const ctx = document.getElementById('moistureChart').getContext('2d');
     const moistureChart = new Chart(ctx, {
@@ -413,6 +416,8 @@
       // Update chart
       moistureChart.data.labels = moistureHistory.indices;
       moistureChart.data.datasets[0].data = moistureHistory.values;
+      moistureChart.data.labels = moistureHistory.indices;
+      moistureChart.data.datasets[0].data = moistureHistory.values;
       moistureChart.update();
 
       // Save to localStorage
@@ -442,6 +447,8 @@
         receivedCount++;
         if (receivedCount % 4500 === 0) {
           updateChart(percentage);
+          receivedCount = 0;
+          console.log('value added to chart');
         }
 
         if (typeof getWateringRecommendation === 'function') {
